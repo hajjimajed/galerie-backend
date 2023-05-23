@@ -1,5 +1,5 @@
 const express = require('express');
-const bodyparser = require('body-parser');
+const bodyParser = require('body-parser');
 const path = require('path');
 const mongoose = require('mongoose');
 const multer = require('multer');
@@ -7,8 +7,30 @@ const multer = require('multer');
 require('dotenv').config();
 
 const MONGODB_URI = process.env.MONGODB_URI;
+const authRoutes = require('./routes/auth');
 
 const app = express();
+
+
+
+app.use(bodyParser.json());
+
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-type, Authorization');
+    next()
+})
+
+app.use('/auth', authRoutes);
+
+app.use((error, req, res, next) => {
+    console.log(error);
+    const status = error.statusCode || 500;
+    const message = error.message;
+    const data = error.data;
+    res.status(status).json({ message: message, data: data })
+})
 
 mongoose.connect(MONGODB_URI)
     .then(result => {

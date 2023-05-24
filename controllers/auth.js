@@ -7,10 +7,16 @@ const jwt = require('jsonwebtoken');
 
 exports.signup = (req, res, next) => {
 
+    if (!req.file) {
+        const error = new Error('no image provided');
+        error.statusCode = 422;
+        throw error;
+    }
+
     const email = req.body.email;
     const password = req.body.password;
     const name = req.body.name;
-    const profileImg = req.body.profileImg;
+    const image = req.file.path;
     const role = req.body.role;
 
     bcrypt.hash(password, 12)
@@ -19,7 +25,7 @@ exports.signup = (req, res, next) => {
                 email: email,
                 password: hashedPassword,
                 name: name,
-                profileImg: profileImg,
+                profileImg: image,
                 role: role
             })
             return user.save()

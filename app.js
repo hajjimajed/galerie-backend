@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const authRoutes = require('./routes/auth');
+const postRoutes = require('./routes/post');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use((req, res, next) => {
 })
 
 app.use('/auth', authRoutes);
+app.use('/post', postRoutes);
 
 app.use((error, req, res, next) => {
     console.log(error);

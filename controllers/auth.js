@@ -2,6 +2,8 @@ const User = require('../models/user');
 const { validationResult } = require('express-validator')
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 
 
 
@@ -102,4 +104,50 @@ exports.userData = (req, res, next) => {
             }
             next(err);
         });
+}
+
+
+exports.update = (req, res, next) => {
+    const userId = req.userId;
+    const email = req.body.email;
+    const name = req.body.name;
+    let image = req.body.image;
+
+    User.findById(userId)
+        .then(user => {
+            if (!user) {
+                const error = new Error('user not found');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            // Update email and name
+            user.email = email;
+            user.name = name;
+
+            if (req.file) {
+                // New image is selected
+                if (user.profileImg) {
+                    // Clear the old image
+                    clearImage(user.profileImg);
+                }
+                user.profileImg = req.file.path;
+            }
+
+            return user.save();
+        })
+        .then(result => {
+            res.status(200).json({ message: 'user data updated', user: result });
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+};
+
+const clearImage = filePath => {
+    filePath = path.join(__dirname, '..', filePath);
+    fs.unlink(filePath, err => console.log(err));
 }

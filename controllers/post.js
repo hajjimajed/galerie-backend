@@ -65,6 +65,26 @@ exports.getPosts = (req, res, next) => {
         })
 }
 
+exports.getPost = (req, res, next) => {
+    const postId = req.params.postId;
+    Post.findById(postId)
+        .then(post => {
+            if (!post) {
+                const error = new Error('post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            res.status(200).json({ message: 'post fetched', post: post })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        })
+}
+
+
 exports.myPosts = (req, res, next) => {
     const userId = req.userId;
 
@@ -81,3 +101,98 @@ exports.myPosts = (req, res, next) => {
             next(err);
         });
 };
+
+
+exports.deletePost = (req, res, next) => {
+
+    const postId = req.params.postId;
+    Post.findById(postId)
+        .then(post => {
+            if (!post) {
+                const error = new Error('post not found');
+                error.statusCode = 403;
+                throw error;
+            }
+            if (post.creator.toString() !== req.userId) {
+                const error = new Error('not authorized');
+                error.statusCode = 403;
+                throw error;
+            }
+            clearImage(post.imageUrl);
+            return Post.findByIdAndRemove(postId);
+        })
+        .then(result => {
+            return User.findById(req.userId);
+        })
+        .then(user => {
+            user.posts.pull(postId);
+            return user.save();
+        })
+        .then(result => {
+            res.status(200).json({ message: 'post deleted successfully' });
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        })
+
+}
+
+
+exports.updatePost = (req, res, next) => {
+    const postId = req.params.postId;
+
+    const title = req.body.title;
+    const description = req.body.description;
+    const category = req.body.category;
+    let imageUrl = req.body.image;
+
+    if (req.file) {
+        imageUrl = req.file.path;
+    }
+
+    Post.findById(postId)
+        .then(post => {
+            if (!post) {
+                const error = new Error('Post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            if (post.creator.toString() !== req.userId) {
+                const error = new Error('Not authorized');
+                error.statusCode = 403;
+                throw error;
+            }
+
+            if (req.file && imageUrl !== post.imageUrl) {
+                // Delete the old image if a new one is selected
+                if (post.imageUrl) {
+                    clearImage(post.imageUrl);
+                }
+                post.imageUrl = imageUrl;
+            }
+
+            post.title = title;
+            post.description = description;
+            post.category = category;
+            return post.save();
+        })
+        .then(result => {
+            res.status(200).json({ message: 'Post updated successfully', post: result });
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+};
+
+
+
+const clearImage = filePath => {
+    filePath = path.join(__dirname, '..', filePath);
+    fs.unlink(filePath, err => console.log(err));
+}

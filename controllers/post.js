@@ -191,6 +191,33 @@ exports.updatePost = (req, res, next) => {
 };
 
 
+exports.searchPosts = (req, res, next) => {
+    const searchQuery = req.query.q; // Assuming the search query is provided as a query parameter with the key 'q'
+
+    let query = Post.find();
+
+    if (searchQuery) {
+        // Apply the search filter if a query is provided
+        query = query.or([
+            { title: { $regex: searchQuery, $options: 'i' } }, // Case-insensitive search on the title
+        ]);
+    }
+
+    query.populate('creator')
+        .exec()
+        .then(posts => {
+            res.status(200).json({ posts });
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+};
+
+
+
 
 const clearImage = filePath => {
     filePath = path.join(__dirname, '..', filePath);

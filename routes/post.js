@@ -21,4 +21,6 @@ router.delete('/posts/:postId', isAuth, postController.deletePost);
 router.put('/posts/:postId', isAuth, postController.updatePost);
 
 
+router.get('/search-posts', postController.searchPosts);
+
 module.exports = router;
